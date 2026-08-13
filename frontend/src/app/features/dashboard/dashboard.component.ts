@@ -2,29 +2,27 @@ import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular
 import { ApiService } from '../../core/api.service';
 import { RealtimeService } from '../../core/realtime.service';
 import { LiveShipment, Shipment, Summary } from '../../core/models';
+import { RouterLink } from '@angular/router';
 import { AlertFeedComponent } from './alert-feed.component';
+import { ChaosPanelComponent } from './chaos-panel.component';
 import { LiveMapComponent } from './live-map.component';
+import { TitleBlockComponent } from '../../shared/titleblock.component';
 
 @Component({
   selector: 'lp-dashboard',
   standalone: true,
-  imports: [LiveMapComponent, AlertFeedComponent],
+  imports: [LiveMapComponent, AlertFeedComponent, ChaosPanelComponent,
+            TitleBlockComponent, RouterLink],
   template: `
-    <!-- Title block, after the cartouche printed in a chart's corner -->
-    <header class="titleblock rule-double">
-      <div class="mark">
-        <h1>LogiPulse</h1>
-        <span class="sub">Logistics Control Tower</span>
-      </div>
+    <lp-titleblock>
+      <span class="link" [class.on]="rt.connected()">
+        <i></i>{{ rt.connected() ? 'Live feed' : 'Reconnecting' }}
+      </span>
+      <span class="rate figure">{{ rt.messageCount() }} msgs</span>
+      <span class="clock figure">{{ clock() }}</span>
+    </lp-titleblock>
 
-      <div class="status">
-        <span class="link" [class.on]="rt.connected()">
-          <i></i>{{ rt.connected() ? 'Live feed' : 'Reconnecting' }}
-        </span>
-        <span class="rate figure">{{ rt.messageCount() }} msgs</span>
-        <span class="clock figure">{{ clock() }}</span>
-      </div>
-    </header>
+    <lp-chaos [selected]="detail()?.shipment_number ?? null" />
 
     <!-- Readings, set like a chart's depth legend: figure over label -->
     <section class="readings">
@@ -45,7 +43,8 @@ import { LiveMapComponent } from './live-map.component';
         @if (detail(); as d) {
           <div class="detail">
             <div class="detail-head">
-              <span class="figure num">{{ d.shipment_number }}</span>
+              <a class="figure num" [routerLink]="['/shipments', d.shipment_number]"
+                 >{{ d.shipment_number }}</a>
               <button class="close" (click)="detail.set(null)">Close</button>
             </div>
             <p class="leg">{{ d.origin }} <span class="arrow">→</span> {{ d.destination }}</p>
@@ -82,14 +81,6 @@ import { LiveMapComponent } from './live-map.component';
   styles: [`
     :host { display: flex; flex-direction: column; height: 100vh; }
 
-    .titleblock { display: flex; justify-content: space-between; align-items: flex-end;
-                  padding: 14px 20px 12px; background: var(--panel); }
-    .mark h1 { margin: 0; font-family: var(--cond); font-size: 21px; font-weight: 600;
-               letter-spacing: .1em; text-transform: uppercase; }
-    .sub { font-family: var(--cond); font-size: 10.5px; letter-spacing: .22em;
-           text-transform: uppercase; color: var(--ink-faint); }
-    .status { display: flex; gap: 20px; align-items: center; font-size: 11px;
-              color: var(--ink-soft); }
     .link { display: flex; align-items: center; gap: 6px; font-family: var(--cond);
             letter-spacing: .12em; text-transform: uppercase; font-size: 10px; }
     .link i { width: 7px; height: 7px; border-radius: 50%; background: var(--signal-red); }
@@ -111,7 +102,9 @@ import { LiveMapComponent } from './live-map.component';
     .detail { background: var(--panel); border-left: 1px solid var(--rule);
               border-bottom: 1px solid var(--rule); padding: 14px 15px; }
     .detail-head { display: flex; justify-content: space-between; align-items: baseline; }
-    .num { font-size: 14px; font-weight: 500; }
+    .num { font-size: 14px; font-weight: 500; color: var(--navy);
+           text-decoration: none; }
+    .num:hover { text-decoration: underline; }
     .close { background: none; border: 0; cursor: pointer; font-family: var(--cond);
              font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
              color: var(--ink-faint); }

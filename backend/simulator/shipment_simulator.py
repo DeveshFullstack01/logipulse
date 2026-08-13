@@ -47,6 +47,8 @@ CHAOS_KEY = "sim:chaos"
 class SimShipment:
     """In-memory state for one moving shipment."""
     number: str
+    origin: str
+    destination: str
     o_lat: float
     o_lon: float
     d_lat: float
@@ -94,6 +96,7 @@ def load_shipments() -> list[SimShipment]:
         for s, r in rows:
             out.append(SimShipment(
                 number=s.shipment_number,
+                origin=r.origin, destination=r.destination,
                 o_lat=r.origin_lat, o_lon=r.origin_lon,
                 d_lat=r.dest_lat, d_lon=r.dest_lon,
                 distance_km=r.distance_km or haversine_km(
@@ -156,8 +159,12 @@ def step(sh: SimShipment, tick_seconds: float, chaos: dict) -> list[ShipmentEven
         return events
 
     # --- chaos injection from the UI ---
-    forced_delay = chaos.get("delay_all") or (
-        sh.number in chaos.get("delay_shipments", [])
+    ports = chaos.get("congest_ports", [])
+    forced_delay = (
+        chaos.get("delay_all")
+        or sh.number in chaos.get("delay_shipments", [])
+        or sh.origin in ports
+        or sh.destination in ports
     )
     if chaos.get("freeze_shipments") and sh.number in chaos["freeze_shipments"]:
         sh.stale_ticks = 20

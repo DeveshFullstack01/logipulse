@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.api import alerts as alerts_api
+from app.api import chaos as chaos_api
 from app.api import dashboard as dashboard_api
 from app.api import shipments as shipments_api
 from app.cache.client import get_all_states, make_client
@@ -55,7 +56,7 @@ async def lifespan(app: FastAPI):
     await app.state.redis.aclose()
 
 
-app = FastAPI(title="LogiPulse Control Tower", version="0.4.0", lifespan=lifespan)
+app = FastAPI(title="LogiPulse Control Tower", version="0.6.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -69,6 +70,7 @@ app.add_middleware(
 app.include_router(dashboard_api.router)
 app.include_router(shipments_api.router)
 app.include_router(alerts_api.router)
+app.include_router(chaos_api.router)
 
 
 @app.get("/health")
