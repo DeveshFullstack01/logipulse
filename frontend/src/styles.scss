@@ -1,0 +1,78 @@
+@import 'leaflet/dist/leaflet.css';
+
+/* ---------------------------------------------------------------
+   LogiPulse — visual language borrowed from Admiralty charts:
+   pale chart paper, deep marine ink, hairline rules, and the muted
+   signal colours of the international maritime flag code.
+   --------------------------------------------------------------- */
+:root {
+  --chart:       #e9ede7;   /* chart paper */
+  --chart-water: #dfe7e4;   /* shallow-water tint */
+  --panel:       #f4f6f2;
+  --ink:         #14212a;   /* engraved chart ink */
+  --ink-soft:    #5a6b72;
+  --ink-faint:   #8b989c;
+  --rule:        #c2ccc5;
+  --rule-soft:   #d8e0d9;
+
+  /* Signal-flag code, not dashboard neon */
+  --signal-green: #1f6f5c;  /* proceeding */
+  --signal-amber: #c98f14;  /* require assistance */
+  --signal-red:   #ac3527;  /* not under command */
+  --navy:         #2b5a78;
+
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  --cond: 'IBM Plex Sans Condensed', 'Arial Narrow', sans-serif;
+  --sans: 'IBM Plex Sans', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--chart);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Chart-style label: small, wide-tracked, quiet */
+.label {
+  font-family: var(--cond);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 500;
+}
+
+.figure {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Hairline double rule — the cartouche border on a printed chart */
+.rule-double {
+  border-bottom: 1px solid var(--rule);
+  box-shadow: 0 2px 0 -1px var(--rule-soft);
+}
+
+:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Leaflet needs a little taming to sit inside the chart aesthetic */
+.leaflet-container { background: var(--chart-water); font-family: var(--sans); }
+.leaflet-control-attribution { font-size: 9px; background: rgba(244,246,242,.8); }
+.leaflet-popup-content-wrapper { border-radius: 2px; box-shadow: 0 2px 12px rgba(20,33,42,.18); }
