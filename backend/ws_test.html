@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>LogiPulse — WebSocket test</title>
+  <style>
+    body { font-family: ui-monospace, Consolas, monospace; background:#0f1115; color:#d7dae0;
+           margin:0; padding:20px; }
+    h1 { font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:#7c8896;
+         font-weight:600; margin:0 0 14px; }
+    #bar { display:flex; gap:22px; align-items:center; padding:10px 14px; background:#161a21;
+           border:1px solid #232833; border-radius:6px; margin-bottom:14px; font-size:13px; }
+    #dot { width:9px; height:9px; border-radius:50%; background:#e5484d; }
+    #dot.on { background:#30a46c; }
+    .n { color:#f0f2f5; font-weight:600; }
+    #log { height:calc(100vh - 150px); overflow-y:auto; background:#161a21;
+           border:1px solid #232833; border-radius:6px; padding:10px; font-size:12px; }
+    .row { padding:3px 6px; border-bottom:1px solid #1d222b; display:flex; gap:12px; }
+    .t { color:#5c6674; }
+    .id { color:#7cc3f0; min-width:78px; }
+    .IN_TRANSIT { color:#30a46c; } .DELAYED { color:#e5484d; }
+    .DELIVERED { color:#8e94a0; } .PICKED_UP,.CREATED { color:#f5a524; }
+    .snap { color:#a78bfa; }
+  </style>
+</head>
+<body>
+  <h1>LogiPulse WebSocket Test</h1>
+  <div id="bar">
+    <span><span id="dot"></span> <span id="state">connecting…</span></span>
+    <span>messages <span class="n" id="count">0</span></span>
+    <span>shipments <span class="n" id="ships">0</span></span>
+    <span>rate <span class="n" id="rate">0</span>/s</span>
+  </div>
+  <div id="log"></div>
+
+<script>
+const log=document.getElementById('log'), dot=document.getElementById('dot'),
+      stateEl=document.getElementById('state'), countEl=document.getElementById('count'),
+      shipsEl=document.getElementById('ships'), rateEl=document.getElementById('rate');
+let count=0, seen=new Set(), window_=[];
+
+function add(cls, id, text){
+  const d=document.createElement('div'); d.className='row';
+  d.innerHTML=`<span class="t">${new Date().toLocaleTimeString()}</span>`+
+              `<span class="id">${id}</span><span class="${cls}">${text}</span>`;
+  log.prepend(d);
+  while(log.children.length>250) log.lastChild.remove();
+}
+
+function connect(){
+  const ws=new WebSocket('ws://localhost:8000/ws/shipments');
+
+  ws.onopen=()=>{ dot.classList.add('on'); stateEl.textContent='connected'; };
+
+  ws.onmessage=e=>{
+    const m=JSON.parse(e.data);
+    count++; countEl.textContent=count;
+    window_.push(Date.now());
+    if(m.type==='SNAPSHOT'){
+      m.shipments.forEach(s=>seen.add(s.shipment_number));
+      add('snap','SNAPSHOT',`${m.shipments.length} shipments restored`);
+    } else {
+      seen.add(m.shipment_number);
+      const d=m.delay_hours?` +${m.delay_hours}h ${m.delay_reason||''}`:'';
+      add(m.status, m.shipment_number,
+          `${m.status}  ${m.latitude?.toFixed(3)}, ${m.longitude?.toFixed(3)}${d}`);
+    }
+    shipsEl.textContent=seen.size;
+  };
+
+  ws.onclose=()=>{
+    dot.classList.remove('on'); stateEl.textContent='disconnected — retrying';
+    setTimeout(connect,2000);   // same reconnect logic Angular will use on Day 5
+  };
+}
+connect();
+
+setInterval(()=>{
+  const cut=Date.now()-5000;
+  window_=window_.filter(t=>t>cut);
+  rateEl.textContent=(window_.length/5).toFixed(1);
+},1000);
+</script>
+</body>
+</html>
