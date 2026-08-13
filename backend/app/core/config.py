@@ -14,5 +14,10 @@ class Settings(BaseSettings):
     delay_alert_threshold_hours: float = 4.0
     stale_shipment_minutes: int = 30
 
+    # The simulator compresses a week-long voyage into ~20 minutes, so a gap
+    # measured in simulated hours would never elapse during a demo. This is
+    # the real-world wall-clock equivalent used by the stale scanner.
+    stale_after_seconds: int = 45
+
 
 settings = Settings()
