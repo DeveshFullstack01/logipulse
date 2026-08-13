@@ -1,0 +1,68 @@
+name: logipulse
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: logipulse-postgres
+    environment:
+      POSTGRES_USER: logipulse
+      POSTGRES_PASSWORD: logipulse
+      POSTGRES_DB: logipulse
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logipulse -d logipulse"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: logipulse-redis
+    ports:
+      - "6380:6379"
+    command: ["redis-server", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Redpanda speaks the Kafka protocol. Single container, no ZooKeeper/KRaft setup.
+  redpanda:
+    image: redpandadata/redpanda:v24.2.7
+    container_name: logipulse-redpanda
+    command:
+      - redpanda
+      - start
+      - --smp=1
+      - --memory=1G
+      - --overprovisioned
+      - --node-id=0
+      - --check=false
+      - --kafka-addr=INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:19092
+      - --advertise-kafka-addr=INTERNAL://redpanda:9092,EXTERNAL://localhost:19092
+    ports:
+      - "19092:19092"   # <-- your host apps connect here
+      - "9644:9644"     # admin API
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Web UI to SHOW your two consumer groups during the demo. Worth having.
+  console:
+    image: redpandadata/console:v2.7.2
+    container_name: logipulse-console
+    depends_on:
+      - redpanda
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+    ports:
+      - "8090:8080"
+
+volumes:
+  pgdata:
